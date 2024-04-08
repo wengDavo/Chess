@@ -1,0 +1,11 @@
+let position = this.chessBoard.addEventListener("click", (e) => {
+  let target = e.target.closest("div");
+  return (
+    target.dataset.value, 
+    target.dataset.isOccupied,
+    target.dataset.chessPiece
+    );
+});
+
+
+ 

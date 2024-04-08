@@ -1,0 +1,77 @@
+:root{
+  --tablet: 500px;
+  --desktop: 1024px;
+}
+
+*{
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+}
+
+body {
+  width: 100vw;
+  height: 100vh;
+  background-color:#333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.game{
+    height: 40%;
+    aspect-ratio: 4/3;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@media screen and (min-width: 600px) {
+  .game{
+    height: 60%;
+  }
+}
+
+@media screen and (min-width: 1024px) {
+  .game{
+    height: 90%;
+  }
+}
+
+
+.chess-board{
+    background-color: whitesmoke;
+    width: 99%;
+    height: 98%;
+
+    display: grid;
+    grid-template-rows: repeat(8, 1fr);
+    /* padding: 0.4em 0.4em 1em 1em; */
+    padding: 0.4em;
+}
+
+.chess-row{
+    background-color: inherit;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+}
+
+.chess-box{
+    background-color:tomato;
+}
+/* tile colors */
+.dark-tile{
+  background-color: aqua;
+}
+.white-tile{
+  background-color:aquamarine;
+}
