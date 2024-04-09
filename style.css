@@ -75,3 +75,6 @@ body {
 .white-tile{
   background-color:aquamarine;
 }
+.highlight-tile{
+  background-color: chartreuse;
+}
