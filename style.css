@@ -66,24 +66,41 @@ body {
 }
 
 .chess-box{
-    background-color:tomato;
     display: flex;
     place-content: center;
     align-items: center;
+    position: relative;
+    
 }
 /* tile colors */
 .dark-tile{
   background-color: aqua;
+  position: relative;
 }
 .white-tile{
   background-color:aquamarine;
 }
-.highlight-tile{
-  background-color: chartreuse;
-}
-/* .highlight-tile ::after{
-  background-color: red;
+
+.highlight::after{
+  content: "";
   position: absolute;
-  width: 10px;
-  width: 10px;
+  background-color:chartreuse;
+  height: 30%;
+  aspect-ratio:  1 / 1;
+  border-radius: 50%;
+  
+  /* animation-name: slide;
+  animation-duration: 0.1s;
+  animation-timing-function: ease-in-out;
+  animation-direction: alternate-reverse; */
+}
+@keyframes slide {
+  100%{
+    transform: translateY(20px);
+  }
+}
+/* @keyframes beat {
+  100%{
+    transform: scale(1.2);
+  }
 } */

@@ -225,7 +225,7 @@ class ChessBoard {
   constructor() {
     this.chessBoard = document.querySelector(".chess-board");
     this.chessBoard.addEventListener("click", this.setThisTileInfo);
-    this.chessBoard.addEventListener("click", this.getThisPieceMoves);
+    this.chessBoard.addEventListener("click", this.showThisPieceMoves);
   }
 
   setThisTileInfo(e) {
@@ -236,23 +236,22 @@ class ChessBoard {
     this.tile["chessPiece"] = JSON.parse(target.dataset.chessPiece);
   }
 
-  getThisPieceMoves() {
-    let { value, isOccupied, chessPiece } = { ...this.tile };
-    let highlightTiles = (possibleMoves) => {
-      Object.entries(possibleMoves).forEach((move) => {
-        let thisPossibleMove = document.querySelector(
-          `[data-value="${move[1]}"]`
-        );
-        if (thisPossibleMove) {
-          thisPossibleMove.classList.toggle("highlight-tile");
-        }
+  showThisPieceMoves() {
+    let highlightTiles = function (moves) {
+      Object.entries(moves).forEach((move) => {
+        let [moveName, moveValue] = [...move];
+        let thisMove = document.querySelector(`[data-value="${moveValue}"]`);
+        thisMove ? thisMove.classList.toggle("highlight") : null;
       });
     };
+    let { value, isOccupied, chessPiece } = { ...this.tile };
+    console.log("value:", chessPiece)
     if (chessPiece) {
       let chessPieceMoves = chessPiece["moves"];
+      // console.log(chessPiece.currentValue)
       // let chessPieceEdges = chessPiece["edges"];
-      console.log(Object.keys(chessPiece).includes("edges"));
-      console.log(chessPieceMoves);
+      // console.log(Object.keys(chessPiece).includes("edges"));
+      // console.log(chessPieceMoves);
       highlightTiles(chessPieceMoves);
       //  console.log(chessPieceMoves);
     }
@@ -288,8 +287,8 @@ class ChessBoard {
         let col = document.createElement("div");
         col.classList.add("chess-box");
         row.append(col);
+        col.setAttribute("data-value", this.logicBoard[x][y])
         col.innerHTML = this.logicBoard[x][y];
-        this.placeChessPieces(col, x, y);
 
         // draw the alternating tiles
         if ((x + y) % 2 == 0) {
@@ -299,83 +298,57 @@ class ChessBoard {
         }
       }
     }
+    this.placeChessPieces();
   }
 
-  placeChessPieces(col, x, y) {
-    let currentValue = this.logicBoard[x][y];
-    let nextValue = null;
-
-    // helper functions
-    // function to set the properties of the tile
-    let setPieceAttributes = (col, obj, currentValue, occupied) => {
-      col.setAttribute("data-chess-piece", JSON.stringify(obj)); //if we don't convert will be [obj obj]
+  placeChessPieces() {
+    let setPieceAttributes = function (col, obj, currentValue, occupied) {
+      //if we don't convert will be sent as str [obj obj]
+      col.setAttribute("data-chess-piece", JSON.stringify(obj));
       col.setAttribute("data-value", currentValue);
       col.setAttribute("data-is-occupied", occupied);
     };
-    let spread = (obj) => [...obj[0], ...obj[1]];
-    // checks if the current value is in the first list, if it is then it is black, else it is white
-    let getColor = (obj) => (obj.includes(currentValue) ? "black" : "white");
-    // initial values for tiles without chess Pieces
-    setPieceAttributes(col, null, currentValue, false);
-
-    // this object of list assigns all the chesspieces
-    // to their positions by this.logicBoard standards
-    let piecePositions = {
-      // black, white
-      // first array is to set the positions for the black pieces
-      // second array is to set the positions for the white pieces
-      Pawn: [
-        [...Array(8).keys()].map((x) => x + 8), // 8,...,15
-        [...Array(8).keys()].map((x) => x + 48), // 48,...,55
-      ],
-      Rook: [
-        [0, 7],
-        [56, 63],
-      ],
-      Knight: [
-        [1, 6],
-        [57, 62],
-      ],
-      Bishop: [
-        [2, 5],
-        [58, 61],
-      ],
-      King: [[3], [59]],
-      Queen: [[4], [60]],
+    let pieceTypeFromSymbol = (currentValue, symbol) => {
+      let allTypeChessPieces = {
+        r: new Rook(currentValue, null, getColor(symbol)),
+        n: new Knight(currentValue, null, getColor(symbol)),
+        b: new Bishop(currentValue, null, getColor(symbol)),
+        k: new King(currentValue, null, getColor(symbol)),
+        q: new Queen(currentValue, null, getColor(symbol)),
+        p: new Pawn(currentValue, null, getColor(symbol)),
+      };
+      return allTypeChessPieces[symbol.toLowerCase()];
     };
-    //transform the object (positions) to an array
-    //for each item in the array of array ["pawn", [ [], [] ]]
-    //if the name of the piece is adequate
-    //create an object based on the name of the piece
-    //then place it on the board using set
-    Object.entries(piecePositions).forEach(([pieceName, pieceList]) => {
-      let thisPiece =
-        pieceName == "Pawn"
-          ? new Pawn(currentValue, nextValue, getColor(pieceList[0]))
-          : pieceName == "Rook"
-          ? new Rook(currentValue, nextValue, getColor(pieceList[0]))
-          : pieceName == "Knight"
-          ? new Knight(currentValue, nextValue, getColor(pieceList[0]))
-          : pieceName == "Bishop"
-          ? new Bishop(currentValue, nextValue, getColor(pieceList[0]))
-          : pieceName == "King"
-          ? new King(currentValue, nextValue, getColor(pieceList[0]))
-          : pieceName == "Queen"
-          ? new Queen(currentValue, nextValue, getColor(pieceList[0]))
-          : null;
+    let getColor = (symbol) =>
+      symbol == symbol.toLowerCase() ? "black" : "white"; 
 
-      if (spread(pieceList).includes(currentValue)) {
-        setPieceAttributes(col, thisPiece, thisPiece.currentValue, true);
+    let [x, y] = [0, 0];
+    const fenBoard = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR".split("")
+    fenBoard.forEach((symbol)=>{
+      if (symbol == "/") {
+        x++;
+        y = 0;
       }
-    });
+      else if (symbol == "8"){
+        for (let i = 0; i < 8; i++) {
+          let currentValue = this.logicBoard[x][i];
+          let col = document.querySelector(`[data-value="${currentValue}"]`);
+          setPieceAttributes(col, null, currentValue, false);
+        }
+      }
+      else {
+        let currentValue = this.logicBoard[x][y];
+        let col = document.querySelector(`[data-value="${currentValue}"]`);
+        let chessPiece = pieceTypeFromSymbol(currentValue, symbol);
+        chessPiece
+          ? setPieceAttributes(col, chessPiece, currentValue, true)
+          : null;
+        y++;
+      }
+    })
   }
 }
 
-// class Game {
-//   constructor() {
 this.chessBoard = new ChessBoard();
 this.chessBoard.createBoard();
-//   }
-// }
 
-// let game = new Game();
