@@ -67,6 +67,9 @@ body {
 
 .chess-box{
     background-color:tomato;
+    display: flex;
+    place-content: center;
+    align-items: center;
 }
 /* tile colors */
 .dark-tile{
@@ -78,3 +81,9 @@ body {
 .highlight-tile{
   background-color: chartreuse;
 }
+/* .highlight-tile ::after{
+  background-color: red;
+  position: absolute;
+  width: 10px;
+  width: 10px;
+} */

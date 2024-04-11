@@ -4,202 +4,267 @@ class ChessPiece {
     this.nextValue = nextValue;
     this.color = color;
     this.name = name;
+    this.chessBoard = new ChessBoard();
   }
-  move(value, increment, checkCase){
-    return "white" == checkCase
-      ? value - increment
-      : value + increment;
+
+  distanceToEdges(value) {
+    // gets the distances for this.value
+    // from this.point to all edges of the board
+    // returns a dictionary of all the distances from this.point to the edges
+    let distances = {};
+    // the board used to assign a tile its value
+    this.chessBoard.createLogicBoard();
+    this.chessBoard.logicBoard.forEach((edge, x) => {
+      edge.forEach((item, y) => {
+        if (item == value) {
+          let [north, south, east, west] = [x, 7 - x, 7 - y, y];
+          let [northWest, northEast, southWest, southEast, center] = [
+            Math.min(north, west),
+            Math.min(north, east),
+            Math.min(south, west),
+            Math.min(south, east),
+            Math.min(north, west, east, south),
+          ];
+
+          distances["north"] = north;
+          distances["south"] = south;
+          distances["east"] = east;
+          distances["west"] = west;
+
+          distances["northWest"] = northWest;
+          distances["northEast"] = northEast;
+          distances["southWest"] = southWest;
+          distances["southEast"] = southEast;
+        }
+      });
+    });
+    return distances;
   }
-  forwards() {}
-  backwards() {}
-  right() {}
-  left() {}
 
-  diagonalTopRight() {}
-  diagonalTopLeft() {}
-  diagonalBottomRight() {}
-  diagonalBottomLeft() {}
+  // if the distance to this edge of this value is 0
+  // then it is at the boundary iof the edge
+  // else return a valid move
+  calcMove(value, increment, distanceToEdge) {
+    if (distanceToEdge <= 0) return null;
+    // by subtracting these two values we get the next move from this.position
+    let moveTo = value - increment;
+    return moveTo;
+  }
 
-  knightTopRight() {}
-  knightTopLeft() {}
-  knightTopFarRight() {}
-  knightTopFarLeft() {}
+  north(value) {
+    let incrementBy = 8;
+    let distanceTo = this.distanceToEdges(value);
+    return this.calcMove(value, incrementBy, distanceTo["north"]);
+  }
+  south(value) {
+    let incrementBy = -8;
+    let distanceTo = this.distanceToEdges(value);
+    return this.calcMove(value, incrementBy, distanceTo["south"]);
+  }
+  east(value) {
+    let incrementBy = -1;
+    let distanceTo = this.distanceToEdges(value);
+    return this.calcMove(value, incrementBy, distanceTo["east"]);
+  }
+  west(value) {
+    let incrementBy = 1;
+    let distanceTo = this.distanceToEdges(value);
+    return this.calcMove(value, incrementBy, distanceTo["west"]);
+  }
 
-  knightBottomRight() {}
-  knightBottomLeft() {}
-  knightBottomFarRight() {}
-  knightBottomFarLeft() {}
+  northEast(value) {
+    let incrementBy = 7;
+    let distanceTo = this.distanceToEdges(value);
+    return this.calcMove(value, incrementBy, distanceTo["northEast"]);
+  }
+  northWest(value) {
+    let incrementBy = 9;
+    let distanceTo = this.distanceToEdges(value);
+    return this.calcMove(value, incrementBy, distanceTo["northWest"]);
+  }
+  southEast(value) {
+    let incrementBy = -9;
+    let distanceTo = this.distanceToEdges(value);
+    return this.calcMove(value, incrementBy, distanceTo["southEast"]);
+  }
+  southWest(value) {
+    let incrementBy = -7;
+    let distanceTo = this.distanceToEdges(value);
+    return this.calcMove(value, incrementBy, distanceTo["southWest"]);
+  }
+
+  // the wide moves need more than 1 free space to be legal
+  // minus by 1 so that if the distance to edge side is 1 the move is not possible
+  // now distance to edge must always be more than 1 for wide moves
+  knightNorthEastWide(value) {
+    let incrementBy = 6;
+    let distanceTo = this.distanceToEdges(value);
+    return this.calcMove(value, incrementBy, distanceTo["northEast"] - 1);
+  }
+  knightNorthWestWide(value) {
+    let incrementBy = 10;
+    let distanceTo = this.distanceToEdges(value);
+    return this.calcMove(value, incrementBy, distanceTo["northWest"] - 1);
+  }
+  knightNoEastLong(value) {
+    let incrementBy = 15;
+    let distanceTo = this.distanceToEdges(value);
+    return this.calcMove(value, incrementBy, distanceTo["northEast"]);
+  }
+  knightNorthWestLong(value) {
+    let incrementBy = 17;
+    let distanceTo = this.distanceToEdges(value);
+    return this.calcMove(value, incrementBy, distanceTo["northWest"]);
+  }
+
+  knightSouthEastWide(value) {
+    let incrementBy = -10;
+    let distanceTo = this.distanceToEdges(value);
+    return this.calcMove(value, incrementBy, distanceTo["southEast"] - 1);
+  }
+  knightSouthWestWide(value) {
+    let incrementBy = -6;
+    let distanceTo = this.distanceToEdges(value);
+    return this.calcMove(value, incrementBy, distanceTo["southWest"] - 1);
+  }
+  knightSouthEastLong(value) {
+    let incrementBy = -17;
+    let distanceTo = this.distanceToEdges(value);
+    return this.calcMove(value, incrementBy, distanceTo["southEast"]);
+  }
+  knightSouthWestLong(value) {
+    let incrementBy = -15;
+    let distanceTo = this.distanceToEdges(value);
+    return this.calcMove(value, incrementBy, distanceTo["southWest"]);
+  }
 }
 class Pawn extends ChessPiece {
   constructor(currentValue, nextValue, color, name) {
     super(currentValue, nextValue, color, (name = "pawn"));
   }
-  forwards() {return this.move(this.currentValue, 8, this.color);}
-  diagonalTopRight() {return this.move(this.currentValue, 7, this.color);}
-  diagonalTopLeft() {return this.move(this.currentValue, 9, this.color);}
-
   moves = {
-    forwards: this.forwards(),
-    diaginalTopRight: this.diagonalTopRight(),
-    diagonalTopLeft: this.diagonalTopLeft(),
+    north: this.north(this.currentValue),
+    south: this.south(this.currentValue),
+    northEast: this.northEast(this.currentValue),
+    northWest: this.northWest(this.currentValue),
+    southWest: this.southWest(this.currentValue),
+    southEast: this.southEast(this.currentValue),
   };
+  // edges = distanceToEdges(this.currentValue)
 }
 class Rook extends ChessPiece {
   constructor(currentValue, nextValue, color, name) {
     super(currentValue, nextValue, color, (name = "rook"));
-    this.increment = null;
   }
-
-  forwards() {return this.move(this.currentValue, 8, this.color)}
-  backwards() {return this.move(this.currentValue, 8, this.color)}
-  right() {return this.move(this.currentValue, -1, this.color)}
-  left() {return this.move(this.currentValue, 1, this.color)}
-
   moves = {
-    forwards: this.forwards(),
-    backwards: this.backwards(),
-    right: this.right(),
-    left: this.left(),
+    north: this.north(this.currentValue),
+    south: this.south(this.currentValue),
+    east: this.east(this.currentValue),
+    west: this.west(this.currentValue),
   };
 }
 class Bishop extends ChessPiece {
   constructor(currentValue, nextValue, color, name) {
     super(currentValue, nextValue, color, (name = "bishop"));
   }
-
-  diagonalTopRight() {return this.move(this.currentValue, 7, this.color);}
-  diagonalTopLeft() {return this.move(this.currentValue, 9, this.color);}
-  diagonalBottomRight() {return this.move(this.currentValue, -9, this.color);}
-  diagonalBottomLeft() {return this.move(this.currentValue, -9, this.color);}
-
   moves = {
-    diagonalTopRight: this.diagonalTopRight(),
-    diagonalTopLeft: this.diagonalTopLeft(),
-    diagonalBottomRight: this.diagonalBottomRight(),
-    diagonalBottomLeft: this.diagonalBottomLeft(),
+    northEast: this.northEast(this.currentValue),
+    northWest: this.northWest(this.currentValue),
+    southEast: this.southEast(this.currentValue),
+    southWest: this.southWest(this.currentValue),
   };
 }
 class Knight extends ChessPiece {
   constructor(currentValue, nextValue, color, name) {
     super(currentValue, nextValue, color, (name = "knight"));
   }
-  knightTopRight() {return this.move(this.currentValue, 6, this.color);}
-  knightTopLeft() {return this.move(this.currentValue, 10, this.color);}
-  knightTopFarRight() {return this.move(this.currentValue, 15, this.color);}
-  knightTopFarLeft() {return this.move(this.currentValue, 17, this.color);}
-
-  knightBottomRight() {return this.move(this.currentValue, -10, this.color);}
-  knightBottomLeft() {return this.move(this.currentValue, -6, this.color);}
-  knightBottomFarRight() {return this.move(this.currentValue, -17, this.color);}
-  knightBottomFarLeft() {return this.move(this.currentValue, -15, this.color);}
   moves = {
-    knightTopRight: this.knightTopRight(),
-    knightTopLeft: this.knightTopLeft(),
-    knightTopFarRight: this.knightTopFarRight(),
-    knightTopFarLeft: this.knightTopFarLeft(),
+    knightNorthEastWide: this.knightNorthEastWide(this.currentValue),
+    knightNorthWestWide: this.knightNorthWestWide(this.currentValue),
+    knightNorthEastLong: this.knightNoEastLong(this.currentValue),
+    knightNorthWestLong: this.knightNorthWestLong(this.currentValue),
 
-    knightBottomRight: this.knightBottomRight(),
-    knightBottomLeft: this.knightBottomLeft(),
-    knightBottomFarRight: this.knightBottomFarRight(),
-    knightBottomFarLeft: this.knightBottomFarLeft(),
+    knightSouthEastWide: this.knightSouthEastWide(this.currentValue),
+    knightSouthWestWide: this.knightSouthWestWide(this.currentValue),
+    knightSouthEastLong: this.knightSouthEastLong(this.currentValue),
+    knightSouthWestLong: this.knightSouthWestLong(this.currentValue),
   };
 }
 class King extends ChessPiece {
   constructor(currentValue, nextValue, color, name) {
     super(currentValue, nextValue, color, (name = "king"));
   }
-  forwards() {return this.move(this.currentValue, 8, this.color)}
-  backwards() {return this.move(this.currentValue, 8, this.color)}
-  right() {return this.move(this.currentValue, -1, this.color)}
-  left() {return this.move(this.currentValue, 1, this.color)}
-  
-  diagonalTopRight() {return this.move(this.currentValue, 7, this.color);}
-  diagonalTopLeft() {return this.move(this.currentValue, 9, this.color);}
-  diagonalBottomRight() {return this.move(this.currentValue, -9, this.color);}
-  diagonalBottomLeft() {return this.move(this.currentValue, -9, this.color);}
-
   moves = {
-    forwards: this.forwards(),
-    backwards: this.backwards(),
-    right: this.right(),
-    left: this.left(),
-
-    diagonalTopRight: this.diagonalTopRight(),
-    diagonalTopLeft: this.diagonalTopLeft(),
-    diagonalBottomRight: this.diagonalBottomRight(),
-    diagonalBottomLeft: this.diagonalBottomLeft(),
+    north: this.north(this.currentValue),
+    south: this.south(this.currentValue),
+    east: this.east(this.currentValue),
+    west: this.west(this.currentValue),
+    northEast: this.northEast(this.currentValue),
+    northWest: this.northWest(this.currentValue),
+    southEast: this.southEast(this.currentValue),
+    southWest: this.southWest(this.currentValue),
   };
 }
 class Queen extends ChessPiece {
   constructor(currentValue, nextValue, color, name) {
     super(currentValue, nextValue, color, (name = "queen"));
   }
- forwards() {return this.move(this.currentValue, 8, this.color)}
-  backwards() {return this.move(this.currentValue, 8, this.color)}
-  right() {return this.move(this.currentValue, -1, this.color)}
-  left() {return this.move(this.currentValue, 1, this.color)}
-  
-  diagonalTopRight() {return this.move(this.currentValue, 7, this.color);}
-  diagonalTopLeft() {return this.move(this.currentValue, 9, this.color);}
-  diagonalBottomRight() {return this.move(this.currentValue, -9, this.color);}
-  diagonalBottomLeft() {return this.move(this.currentValue, -9, this.color);}
-
   moves = {
-    forwards: this.forwards(),
-    backwards: this.backwards(),
-    right: this.right(),
-    left: this.left(),
-
-    diagonalTopRight: this.diagonalTopRight(),
-    diagonalTopLeft: this.diagonalTopLeft(),
-    diagonalBottomRight: this.diagonalBottomRight(),
-    diagonalBottomLeft: this.diagonalBottomLeft(),
+    north: this.north(this.currentValue),
+    south: this.south(this.currentValue),
+    east: this.east(this.currentValue),
+    west: this.west(this.currentValue),
+    northEast: this.northEast(this.currentValue),
+    northWest: this.northWest(this.currentValue),
+    southEast: this.southEast(this.currentValue),
+    southWest: this.southWest(this.currentValue),
   };
 }
 
 class ChessBoard {
   constructor() {
     this.chessBoard = document.querySelector(".chess-board");
-    this.chessBoard.addEventListener("click", this.getThisTileInfo);
+    this.chessBoard.addEventListener("click", this.setThisTileInfo);
     this.chessBoard.addEventListener("click", this.getThisPieceMoves);
   }
 
-  getThisTileInfo(e) {
+  setThisTileInfo(e) {
     this.tile = {};
     let target = e.target.closest("div");
-    this.tile["value"] = target.dataset.value;
+    this.tile["value"] = +target.dataset.value;
     this.tile["isOccupied"] = target.dataset.isOccupied;
     this.tile["chessPiece"] = JSON.parse(target.dataset.chessPiece);
   }
 
-  getThisPieceMoves(e) {
-    let { value: tileValue, isOccupied, chessPiece } = { ...this.tile };
-
-    // let showHighlightedTiles = (possibleMoves) => {
-    //   Object.entries(possibleMoves).forEach((piece) => {
-        
-    //     let thisPossibleMove = document.querySelector(
-    //       `[data-value="${piece[1]}"]`
-    //     );
-    //     console.log("why:", piece[1]);
-    //     thisPossibleMove.classList.toggle("highlight-tile");
-    //     //
-    //     // console.log(`move-name:${piece[0]}, move-value:${piece[1]}`);
-    //   });
-    // };
-
-    // showHighlightedTiles(chessPiece.moves)
-    // console.log("current:", chessPiece.name);
-    console.log(chessPiece["moves"]);
-    console.log("current:",chessPiece.currentValue);
+  getThisPieceMoves() {
+    let { value, isOccupied, chessPiece } = { ...this.tile };
+    let highlightTiles = (possibleMoves) => {
+      Object.entries(possibleMoves).forEach((move) => {
+        let thisPossibleMove = document.querySelector(
+          `[data-value="${move[1]}"]`
+        );
+        if (thisPossibleMove) {
+          thisPossibleMove.classList.toggle("highlight-tile");
+        }
+      });
+    };
+    if (chessPiece) {
+      let chessPieceMoves = chessPiece["moves"];
+      // let chessPieceEdges = chessPiece["edges"];
+      console.log(Object.keys(chessPiece).includes("edges"));
+      console.log(chessPieceMoves);
+      highlightTiles(chessPieceMoves);
+      //  console.log(chessPieceMoves);
+    }
   }
 
   createLogicBoard() {
-    // label the this baord with numbers (0-63)
-    //the logic board contains a 2d array from numbers 0 - 63
+    // A 2d array of numbers from 0 - 63 => 8 * 8
     this.logicBoard = [];
+    const numberOfRows = 8;
+    const numberOfCols = 8;
     let constant = 0;
-    for (let x = 0; x < 8; x++) {
+    for (let x = 0; x < numberOfRows; x++) {
       this.logicBoard.push([]);
       let run = 8 + constant;
       for (let y = constant; y < run; y++) {
@@ -214,7 +279,6 @@ class ChessBoard {
     const numberOfCols = 8;
     this.createLogicBoard();
 
-    // draw the board with css
     for (let x = 0; x < numberOfRows; x++) {
       let row = document.createElement("article");
       row.classList.add("chess-row");
@@ -224,24 +288,14 @@ class ChessBoard {
         let col = document.createElement("div");
         col.classList.add("chess-box");
         row.append(col);
-
-        col.innerHTML = this.logicBoard[x][y]
-        // map corresponding values
+        col.innerHTML = this.logicBoard[x][y];
         this.placeChessPieces(col, x, y);
 
         // draw the alternating tiles
-        if (x % 2 === 0) {
-          if (y % 2 === 0) {
-            col.classList.add("white-tile");
-          } else {
-            col.classList.add("dark-tile");
-          }
+        if ((x + y) % 2 == 0) {
+          col.classList.add("white-tile");
         } else {
-          if (y % 2 !== 0) {
-            col.classList.add("white-tile");
-          } else {
-            col.classList.add("dark-tile");
-          }
+          col.classList.add("dark-tile");
         }
       }
     }
@@ -259,19 +313,20 @@ class ChessBoard {
       col.setAttribute("data-is-occupied", occupied);
     };
     let spread = (obj) => [...obj[0], ...obj[1]];
+    // checks if the current value is in the first list, if it is then it is black, else it is white
     let getColor = (obj) => (obj.includes(currentValue) ? "black" : "white");
-    // checks if the current value is in the first list, if it is then it is black, else it is white and returns the correct color for the piece
-    setPieceAttributes(col, null, currentValue, false); //for empty tiles
+    // initial values for tiles without chess Pieces
+    setPieceAttributes(col, null, currentValue, false);
 
-    //this objects lists all the chesspieces to their positions
-    //on the logic board
+    // this object of list assigns all the chesspieces
+    // to their positions by this.logicBoard standards
     let piecePositions = {
-      //black, white
-      //first array is to set the positions for the black pieces
-      //second array is to set the positions for the white pieces
+      // black, white
+      // first array is to set the positions for the black pieces
+      // second array is to set the positions for the white pieces
       Pawn: [
-        [...Array(8).keys()].map((x) => x + 8), //black from 8 through 15
-        [...Array(8).keys()].map((x) => x + 48), //white from 48 through 55
+        [...Array(8).keys()].map((x) => x + 8), // 8,...,15
+        [...Array(8).keys()].map((x) => x + 48), // 48,...,55
       ],
       Rook: [
         [0, 7],
@@ -316,11 +371,11 @@ class ChessBoard {
   }
 }
 
-class Game {
-  constructor() {
-    this.chessBoard = new ChessBoard();
-    this.chessBoard.createBoard();
-  }
-}
+// class Game {
+//   constructor() {
+this.chessBoard = new ChessBoard();
+this.chessBoard.createBoard();
+//   }
+// }
 
-let game = new Game();
+// let game = new Game();
