@@ -61,7 +61,7 @@ class ChessPiece {
         return nextValues;
       }
       return [nextValue];
-    } 
+    }
   }
 
   // get direction function takes the name od the directio it is to calculate for and returns the value in the direction
@@ -155,7 +155,7 @@ class ChessBoard {
     // this.fenString = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
     this.numberOfRows = 8;
     this.numberOfCols = 8;
-    this.logicBoard = this.createLogicBoard()
+    this.logicBoard = this.createLogicBoard();
     this.chessBoard = document.querySelector(".chess-board");
     // this.updateBoard();
   }
@@ -319,59 +319,82 @@ class ChessBoard {
   movePiece(e) {
     let square = e.target.closest("div");
     let piece = JSON.parse(square.dataset.chessPiece);
-    let isTileOccuppied = function (value) {
+    let getTileIsOccupied = function (movesValue) {
+      for (let value of movesValue) {
         let squareTile = document.querySelector(`[data-value="${value}"]`);
         return squareTile.dataset.isOccupied;
+      }
     };
-    let getMoves = function (chessPiece) {
-        if (!(typeof chessPiece === "object" && chessPiece !== null))
-            throw new TypeError("not an object chess piece - v");
-     
-        let slideablePieces = ["r", "b", "q"];
-        let slideable = slideablePieces.includes(chessPiece.type.toLowerCase());
-        if(slideable){
-          let slideableMoves = Object.entries(chessPiece.moves).map((move) => {
-            let [_, movesValue] = [...move];
-            let me = movesValue.map((item) =>
-              isTileOccuppied(item) == "true" ? "-1" : item
-            );
-            let [list, i] = [[], 1];
-            while (me[i] != "-1" && i < me.length) {
-              list.push(me[i]);
-              i++;
-            }
-            return list;
-          });
-          return slideableMoves
+    // let getValidMoves = function (chessPiece) {
+    //     if (!(typeof chessPiece === "object" && chessPiece !== null))
+    //         throw new TypeError("not an object chess piece - v");
+    //     let possibleMoves = Object.entries(chessPiece.moves).map((move) => {
+    //       let [_, movesValue] = [...move];
+    //       let tileOccupied = getTileIsOccupied(movesValue);
+    //       return tileOccupied == "false" ? movesValue : null;
+    //     });
+    //     return possibleMoves;
+    // };
+    let getValidMoves = function (chessPiece) {
+      if (!(typeof chessPiece === "object" && chessPiece !== null))
+        throw new TypeError("not an object chess piece - v");
+
+      let slideablePieces = ["r", "b", "q"];
+      let repetable = slideablePieces.includes(chessPiece.type.toLowerCase());
+      let normalMoves = Object.entries(chessPiece.moves).map((move) => {
+        let [_, movesValue] = [...move];
+        let tileOccupied = getTileIsOccupied(movesValue);
+        return tileOccupied == "false" ? movesValue : null;
+      });
+      let repetableMoves = Object.entries(chessPiece.moves).map((move) => {
+        let [_, movesValue] = [...move];
+        // console.log(movesValue)
+        let sqr = document.querySelector(`[data-value="${value}"]`);
+        let sqrOccupied = sqr.dataset.isOccupied;
+        while (sqrOccupied != "true") {
+          return sqrOccupied;
         }
-        let normalMoves = Object.entries(chessPiece.moves).map((move) => {
-          let [_, movesValue] = [...move];
-          let tileOccupied = isTileOccuppied(movesValue);
-          return tileOccupied == "false" ? movesValue : null;
+        let me = movesValue.map((value) => {});
+        console.log(me);
+        // return tileOccupied == "false" ? movesValue : null;
+      });
+      // console.log(repetableMoves)
+      // return repetable ? repetableMoves : normalMoves;
+    };
+    let highlightTiles = function (chessPiece) {
+      if (!(typeof chessPiece === "object" && chessPiece !== null))
+        throw new TypeError("not an object chess piece - h");
+      document
+        .querySelector(`[data-value="${chessPiece.currentValue}"]`)
+        .classList.toggle("highlight-square");
+      let validMoves = getValidMoves(chessPiece);
+      if (validMoves) {
+        validMoves.forEach((listOfMoves) => {
+          if (listOfMoves) {
+            console.log(typeof listOfMoves);
+            listOfMoves.forEach((move) => {
+              document
+                .querySelector(`[data-value="${move}"]`)
+                .classList.toggle("highlight-circle");
+              // thisMove.addEventListener("click", () => updateBoard.bind(thisMove));
+            });
+          }
         });
-        return normalMoves
+      }
     };
-    let highlightMoves = function(chessPiece){
-      // if (!(typeof chessPiece === "object" && chessPiece !== null))
-      //   throw new TypeError("not an object chess piece - h");
-        document
-          .querySelector(`[data-value="${chessPiece.currentValue}"]`)
-          .classList.toggle("highlight-square");
-        let validMoves = getMoves(chessPiece);
-        if (validMoves) {
-          validMoves.forEach((listOfMoves) => {
-           if(listOfMoves){
-             listOfMoves.forEach((move) => {
-               let curMove = document
-                 .querySelector(`[data-value="${move}"]`)
-                curMove.classList.toggle("highlight-circle");
-              //  curMove.addEventListener("click",this.updateBoard);
-             });
-           }});
-        }
-    }
-    highlightMoves(piece)
+    console.log(getValidMoves(piece));
+    // highlightTiles(piece)
   }
+
+  // update(e){
+  //   let getTileInfo = function(){
+  //      let target = e.target.closest("div");
+  //      let value = +target.dataset.value;
+  //      let isOccupied = target.dataset.isOccupied;
+  //      let chessPiece = JSON.parse(target.dataset.chessPiece);
+  //      return [value, isOccupied, chessPiece]
+  //  }
+  // }
   createCorrespondBoard() {
     const correspondBoard = [];
     const alph = ["a", "b", "c", "d", "e", "f", "g", "h"];

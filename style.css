@@ -1,6 +1,9 @@
 :root{
   --tablet: 500px;
   --desktop: 1024px;
+  --dark-tile: #B7C0D8;
+  --white-tile: #E8EDF9;
+  --highlight: #7B61FF;
 }
 
 *{
@@ -69,31 +72,39 @@ body {
     display: flex;
     place-content: center;
     align-items: center;
-    position: relative;
-    
+    position: relative; 
+}
+.chess-piece-icon{
+  display: inline-block;
+  height: 90%;
+  width: 50%;
 }
 /* tile colors */
 .dark-tile{
-  background-color: aqua;
-  position: relative;
+  background-color: var(--dark-tile);
 }
 .white-tile{
-  background-color:aquamarine;
+  background-color: var(--white-tile);
 }
 
-.highlight::after{
+.highlight-square{
+  background-color: var(--highlight);
+}
+
+.highlight-circle::after{
   content: "";
   position: absolute;
-  background-color:chartreuse;
+  background-color: var(--highlight);
   height: 30%;
   aspect-ratio:  1 / 1;
   border-radius: 50%;
   
-  /* animation-name: slide;
+  animation-name: slide;
   animation-duration: 0.1s;
   animation-timing-function: ease-in-out;
-  animation-direction: alternate-reverse; */
+  animation-direction: alternate-reverse;
 }
+
 @keyframes slide {
   100%{
     transform: translateY(20px);
