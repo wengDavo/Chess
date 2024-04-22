@@ -1,9 +1,11 @@
 :root{
-  --tablet: 500px;
+  --tablet: 600px;
   --desktop: 1024px;
-  --dark-tile: #B7C0D8;
-  --white-tile: #E8EDF9;
-  --highlight: #7B61FF;
+  --dark-sqr: #B7C0D8;
+  --white-sqr: #E8EDF9;
+  --float-char:rgb(128, 124, 124);
+  --active: #7B61FF;
+  --danger: rgb(216, 116, 116);
 }
 
 *{
@@ -25,19 +27,32 @@ body {
   width: 100vw;
   height: 100vh;
   background-color:#333;
+
   display: flex;
   justify-content: center;
   align-items: center;
-}
+  flex-direction: column;
+  row-gap: 1rem;
 
+  font-family: cursive;
+}
+.display{
+  height: 5%;
+  color: var(--white-sqr);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* animation-name: beat; */
+
+}
 .game{
-    height: 40%;
+    height: 35%;
     aspect-ratio: 4/3;
     display: flex;
     justify-content: center;
     align-items: center;
 }
-
 @media screen and (min-width: 600px) {
   .game{
     height: 60%;
@@ -46,10 +61,9 @@ body {
 
 @media screen and (min-width: 1024px) {
   .game{
-    height: 90%;
+    height: 80%;
   }
 }
-
 
 .chess-board{
     background-color: whitesmoke;
@@ -58,7 +72,6 @@ body {
 
     display: grid;
     grid-template-rows: repeat(8, 1fr);
-    /* padding: 0.4em 0.4em 1em 1em; */
     padding: 0.4em;
 }
 
@@ -68,33 +81,36 @@ body {
     grid-template-columns: repeat(8, 1fr);
 }
 
-.chess-box{
+.chess-sqr{
     display: flex;
     place-content: center;
     align-items: center;
-    position: relative; 
+    position: relative;
+    
 }
 .chess-piece-icon{
   display: inline-block;
   height: 90%;
   width: 50%;
 }
-/* tile colors */
-.dark-tile{
-  background-color: var(--dark-tile);
+/* sqr colors */
+.dark-sqr{
+  background-color: var(--dark-sqr);
 }
-.white-tile{
-  background-color: var(--white-tile);
+.white-sqr{
+  background-color: var(--white-sqr);
+}
+.active-sqr{
+  background-color: var(--active);
+}
+.opps-sqr{
+  background-color: var(--danger);
 }
 
-.highlight-square{
-  background-color: var(--highlight);
-}
-
-.highlight-circle::after{
+.circle-sqr::after{
   content: "";
   position: absolute;
-  background-color: var(--highlight);
+  background-color: var(--active);
   height: 30%;
   aspect-ratio:  1 / 1;
   border-radius: 50%;
@@ -110,8 +126,20 @@ body {
     transform: translateY(20px);
   }
 }
-/* @keyframes beat {
-  100%{
-    transform: scale(1.2);
-  }
-} */
+
+.num-sqr::after{
+  content: attr(data-board-num);
+  position: absolute;
+  top: 5%;
+  left: 5%;
+  font-size: clamp(0.4rem, -0.166rem + 1.5094vw, 0.8rem);
+  color: var(--float-char);
+}
+.alph-sqr::before{
+  content: attr(data-board-alph);
+  position: absolute;
+  bottom: 5%;
+  right: 5%;
+  font-size: clamp(0.4rem, -0.166rem + 1.5094vw, 0.8rem);
+  color: var(--float-char);
+}
