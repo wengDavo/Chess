@@ -1,4 +1,14 @@
 "use strict";
+// TODO
+// feature => set pawns to move twice at the start of the game
+// feature => checkmate and castling
+// bug => cleanBoard function not cleaning the board well 
+//     event listeners (they get assigned to each possible move for a piece)
+//     and do not get removed so there is the effect where a piece can be replaced to its previous marked sqr
+//     it removes the style but for some reason the style can never be applied again
+// bug => knights are not moving perfectly because of the reduce parameter set for them
+//    which is good except when they are at the other edge of the board then some of their moves
+//    will be reduced  because the position is -1
 class ChessPiece {
   constructor(currentVal, type, img) {
     this.currentVal = currentVal;
@@ -64,8 +74,10 @@ class Pawn extends ChessPiece {
     this.direction == "north"
       ? `${this.direction}West`
       : `${this.direction}East`;
+  // a pawn is  promotable if the distance to the forward  is less than or equal 1
   promotable =
     this.board._distanceToEdges(this.currentVal)[this.direction] <= 1;
+  hasMoved = false;
   moves = {
     forward: this.getMove(this.direction, this.currentVal),
     topRight: this.getMove(this.directionTopRight, this.currentVal),
@@ -90,9 +102,10 @@ class Bishop extends ChessPiece {
 }
 class Knight extends ChessPiece {
   moves = {
+    // problem
     northEastWide: this.getMove("northEast", this.currentVal, false, -1, -1),
-    northWestWide: this.getMove("northWest", this.currentVal, false, +1, -1),
-    southEastWide: this.getMove("southEast", this.currentVal, false, -1, -1),
+    northWestWide: this.getMove("northWest", this.currentVal, false, +1, -1), // -1*
+    southEastWide: this.getMove("southEast", this.currentVal, false, -1, -1), // -1*
     southWestWide: this.getMove("southWest", this.currentVal, false, +1, -1),
 
     northEastLong: this.getMove("northEast", this.currentVal, false, +8),
@@ -130,17 +143,15 @@ class ChessBoard {
   constructor() {
     this.board = new Board();
     this.chessBoard = document.querySelector(".chess-board");
+    this.displayPanel = document.querySelector(".display");
   }
   #numberOfRows = 8;
   #numberOfCols = 8;
-  // #fenString = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-  #fenString = "r1bqkbnr/pppp2pp/2n5/4pp2/4P3/Q4N2/PPPP1PPP/RNB1KB1R";
-  // #fenString = "r1bqk1nr/ppp2ppp/2n1p3/3p4/3P4/2N5/PPP1PPPP/R1BQKB1R";
+  #whoPlayedLast = "";
+  #fenString = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
   get fenString() {
     return this.#fenString;
   }
-  // TODO - implement a validator to check if the fenString is valid
-  // but not now, I am tired, maybe hopefully
   drawChessBoard() {
     for (let x = 0; x < this.#numberOfRows; x++) {
       let row = document.createElement("article");
@@ -179,26 +190,26 @@ class ChessBoard {
     }
     this.#placePieces();
   }
-  cleanBoard() {
+  // stupid function not doing its job well
+  #cleanChessBoard() {
     this.board._logicBoard().forEach((row) => {
       row.forEach((val) => {
         let sqr = document.querySelector(`[data-val="${val}"]`);
-        //  sqr.toggleEventListener("click", () =>
-        //    this.#updateBoard(sqr.dataset.chessPiece, sqr.dataset.val)
-        //  );
         sqr.dataset.isOccupied = false;
         sqr.dataset.chessPiece = null;
         sqr.innerHTML = "";
 
-        // if (sqr.classList.contains("active-sqr")){
+        // if (sqr.classList.contains("active-sqr")) {
+        //   // console.log("before:",sqr.dataset.val, sqr.classList);
         sqr.classList.remove("active-sqr");
-        //   console.log(sqr)
+        //   // sqr.classList = ""
+        //   // console.log("after:",sqr.dataset.val, sqr.classList);
         // }
-        // if (sqr.classList.contains("opps-sqr")){
+        // // if (sqr.classList.contains("opps-sqr")){
         sqr.classList.remove("opps-sqr");
-        // }
-        // if (sqr.classList.contains("circle-sqr"))
-        // {
+        // // }
+        // // if (sqr.classList.contains("circle-sqr"))
+        // // {
         sqr.classList.remove("circle-sqr");
 
         // }
@@ -206,7 +217,7 @@ class ChessBoard {
       });
     });
   }
-  #updateBoard(type, currentVal, nextval) {
+  #updateChessBoard(type, currentVal, nextVal) {
     const numberOfCols = this.#numberOfCols;
     const numberOfRows = this.#numberOfRows;
     let fenToArray = function (fenString) {
@@ -252,78 +263,94 @@ class ChessBoard {
       }
       return fenString;
     };
-
     let fenArray = fenToArray(this.#fenString);
-    let [fromX, fromY] = this.#getCoordinates(currentVal);
-    let [toX, toY] = this.#getCoordinates(nextval);
+
+    let [fromX, fromY] = this.board._getCoordinates(+currentVal);
+    let [toX, toY] = this.board._getCoordinates(+nextVal);
     [fenArray[fromX][fromY], fenArray[toX][toY]] = ["", type];
 
-    let updatedFenString = arrayToFen(fenArray);
-    this.#fenString = updatedFenString;
-    this.cleanBoard();
-    this.#placePieces();
-
-    const display = document.querySelector(".display");
-    display.textContent = `${type} ${
+    // display
+    this.displayPanel.textContent = `${this.#getPieceColor(type)} ${type} ${
       this.board._corresponBoard()[fromX][fromY]
     } to ${this.board._corresponBoard()[toX][toY]}`;
+    //
+    let updatedFenString = arrayToFen(fenArray);
+    this.#whoPlayedLast = this.#getPieceColor(type);
+    this.#fenString = updatedFenString;
+    //
+    this.#cleanChessBoard();
+    this.#placePieces();
   }
   #movePiece(e) {
-    let sqr = e.target.closest("div");
-    let piece = JSON.parse(sqr.dataset.chessPiece);
-    let getSqr = (val) => document.querySelector(`[data-val="${val}"]`);
+    const sqr = e.target.closest("div");
+    const piece = JSON.parse(sqr.dataset.chessPiece);
+   
+    const getSqr = (val) => document.querySelector(`[data-val="${val}"]`);
+    const promoteTo = (symbol, piece) =>
+      symbol == symbol.toLowerCase() ? piece : piece.toUpperCase();
+    const whoPlayedLast = piece
+      ? this.#getPieceColor(piece.type) == this.#whoPlayedLast
+      : null;
+    const pawnPromotable = piece
+      ? piece.type.toLowerCase() == "p" && piece.promotable
+      : null;
 
-    if (piece) {
-      (piece.type == "P" || piece.type == "p") ? console.log(piece.promote) : null;
+    if(piece && !whoPlayedLast){
       this.#highlightMoves(piece);
       let legalMoves = this.#getMoves(piece);
+      console.log(legalMoves)
       for (let moves of legalMoves) {
+        if (pawnPromotable) {
+          piece.type = promoteTo(piece.type, "q");
+        }
         if (moves) {
           for (let move of moves) {
             let sqr = getSqr(move);
-            sqr.addEventListener("click", () =>
-              this.#updateBoard(piece.type, piece.currentVal, sqr.dataset.val)
-            );
+            sqr.addEventListener("click", () => {
+              this.#updateChessBoard(
+                piece.type,
+                piece.currentVal,
+                sqr.dataset.val
+              );
+            });
           }
         }
       }
     }
+
   }
   #placePieces() {
-    let getColor = (symbol) =>
-      symbol == symbol.toLowerCase() ? "black" : "white";
-
     let pieceTypeFromSymbol = (currentVal, symbol) => {
       let allTypeChessPieces = {
         r: new Rook(
           currentVal,
           symbol,
-          `chessIcons/Rook,${getColor(symbol)}.svg`
+          `chessIcons/Rook,${this.#getPieceColor(symbol)}.svg`
         ),
         n: new Knight(
           currentVal,
           symbol,
-          `chessIcons/Knight,${getColor(symbol)}.svg`
+          `chessIcons/Knight,${this.#getPieceColor(symbol)}.svg`
         ),
         b: new Bishop(
           currentVal,
           symbol,
-          `chessIcons/Bishop,${getColor(symbol)}.svg`
+          `chessIcons/Bishop,${this.#getPieceColor(symbol)}.svg`
         ),
         k: new King(
           currentVal,
           symbol,
-          `chessIcons/King,${getColor(symbol)}.svg`
+          `chessIcons/King,${this.#getPieceColor(symbol)}.svg`
         ),
         q: new Queen(
           currentVal,
           symbol,
-          `chessIcons/Queen,${getColor(symbol)}.svg`
+          `chessIcons/Queen,${this.#getPieceColor(symbol)}.svg`
         ),
         p: new Pawn(
           currentVal,
           symbol,
-          `chessIcons/Pawn,${getColor(symbol)}.svg`
+          `chessIcons/Pawn,${this.#getPieceColor(symbol)}.svg`
         ),
       };
       return allTypeChessPieces[symbol.toLowerCase()];
@@ -352,11 +379,13 @@ class ChessBoard {
       }
     });
   }
-  #promotePiece(currentType, nextType) {}
+  #getPieceColor(symbol) {
+    return symbol == symbol.toLowerCase() ? "black" : "white";
+  }
   #getMoves(chessPiece) {
+    if (!(typeof chessPiece === "object" && chessPiece !== null))
+        throw new TypeError("not an object chess piece");
     let getSqr = (val) => document.querySelector(`[data-val="${val}"]`);
-    let getType = (cP) =>
-      cP.type == cP.type.toLowerCase() ? "black" : "white";
 
     // returns true if the next piece is occupied by any type -> str
     let isSqrOccupied = (val) => getSqr(val).dataset.isOccupied;
@@ -364,15 +393,18 @@ class ChessBoard {
     // retruns null=empty sqr
     let isSqrOccupiedByType = (val, curP) => {
       let nextP = JSON.parse(getSqr(val).dataset.chessPiece);
-      return nextP ? (getType(curP) === getType(nextP) ? true : false) : null;
+      return nextP
+        ? this.#getPieceColor(curP.type) === this.#getPieceColor(nextP.type)
+        : null;
     };
-    if (!(typeof chessPiece === "object" && chessPiece !== null))
-      throw new TypeError("not an object chess piece");
+  
 
     const pawn = ["p"].includes(chessPiece.type.toLowerCase());
     const slideable = ["r", "b", "q"].includes(chessPiece.type.toLowerCase());
+    // not completely legal have not accounted for checkmate
+    let legalMoves = null;
     if (pawn) {
-      let pawnMoves = Object.entries(chessPiece.moves).map((move) => {
+      let pawnPseudoMoves = Object.entries(chessPiece.moves).map((move) => {
         let [moveName, moveVal] = [...move];
         let canAdvance =
           moveName == "forward" &&
@@ -380,40 +412,43 @@ class ChessBoard {
         let canCaptureOpps =
           (moveName == "topRight" || moveName == "topLeft") &&
           isSqrOccupiedByType(moveVal, chessPiece) == false;
-
+        // console.log("hasMoved:", chessPiece);
         if (canAdvance) return moveVal;
         if (canCaptureOpps) return moveVal;
       });
-      return pawnMoves;
+      legalMoves = pawnPseudoMoves;
     } else if (slideable) {
-      let slideableMoves = Object.entries(chessPiece.moves).map((move) => {
-        let [_, moveVal] = [...move];
-        let sqrOccupiedType = moveVal.map((item) =>
-          isSqrOccupiedByType(item, chessPiece) ? true : false
-        );
-        let sqrOccupied = moveVal.map((item) =>
-          isSqrOccupied(item, chessPiece) == "true" ? true : false
-        );
-        let positions = [],
-          index = 1;
-        while (
-          sqrOccupiedType[index] != true &&
-          index < sqrOccupiedType.length
-        ) {
-          positions.push(moveVal[index]);
-          if (sqrOccupied[index]) break;
-          index++;
+      let slideablePseudoMoves = Object.entries(chessPiece.moves).map(
+        (move) => {
+          let [_, moveVal] = [...move];
+          let sqrOccupiedType = moveVal.map((item) =>
+            isSqrOccupiedByType(item, chessPiece)
+          );
+          let sqrOccupied = moveVal.map((item) =>
+            isSqrOccupied(item, chessPiece) == "true" ? true : false
+          );
+          let positions = [],
+            index = 1;
+          while (
+            sqrOccupiedType[index] != true &&
+            index < sqrOccupiedType.length
+          ) {
+            positions.push(moveVal[index]);
+            if (sqrOccupied[index]) break;
+            index++;
+          }
+          return positions;
         }
-        return positions;
-      });
-      return slideableMoves;
+      );
+      legalMoves = slideablePseudoMoves;
     } else {
-      let regularMoves = Object.entries(chessPiece.moves).map((move) => {
+      let regularPseudoMoves = Object.entries(chessPiece.moves).map((move) => {
         let [_, moveVal] = [...move];
         return isSqrOccupiedByType(moveVal, chessPiece) ? null : moveVal;
       });
-      return regularMoves;
+      legalMoves = regularPseudoMoves;
     }
+    return legalMoves;
   }
   #highlightMoves(chessPiece) {
     let getSqr = (val) => document.querySelector(`[data-val="${val}"]`);
@@ -430,15 +465,6 @@ class ChessBoard {
         });
       }
     });
-  }
-  #getCoordinates(val) {
-    let cor = [];
-    this.board._logicBoard().forEach((row, idx) => {
-      row.forEach((col, ydx) => {
-        if (col == val) cor = [idx, ydx];
-      });
-    });
-    return cor;
   }
 }
 class Board {
@@ -483,14 +509,15 @@ class Board {
     });
     return distances;
   }
+  _getCoordinates(val) {
+    let cor = [];
+    this._logicBoard().forEach((row, idx) => {
+      row.forEach((col, ydx) => {
+        if (col == val) cor = [idx, ydx];
+      });
+    });
+    return cor;
+  }
 }
 let chessBoard = new ChessBoard();
 chessBoard.drawChessBoard();
-// chessBoard.fenString = "r1bqk1nr/ppp2ppp/2n1p3/3p4/3P4/2N5/PPP1PPPP/R1BQKB1R";
-// chessBoard.fenString = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-// chessBoard.cleanBoard();
-// chessBoard.init();
-// this.fenString = "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR";
-    // this.fenString = "r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R";
-    // this.fenString = "r1bqk1nr/ppp2ppp/2n1p3/3p4/3P4/2N5/PPP1PPPP/R1BQKB1R";
-    // this.fenString = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
