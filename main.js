@@ -2,10 +2,6 @@
 // TODO
 // feature => set pawns to move twice at the start of the game
 // feature => checkmate and castling
-// bug => cleanBoard function not cleaning the board well 
-//     event listeners (they get assigned to each possible move for a piece)
-//     and do not get removed so there is the effect where a piece can be replaced to its previous marked sqr
-//     it removes the style but for some reason the style can never be applied again
 // bug => knights are not moving perfectly because of the reduce parameter set for them
 //    which is good except when they are at the other edge of the board then some of their moves
 //    will be reduced  because the position is -1
@@ -144,6 +140,7 @@ class ChessBoard {
     this.board = new Board();
     this.chessBoard = document.querySelector(".chess-board");
     this.displayPanel = document.querySelector(".display");
+    this.p = null;
   }
   #numberOfRows = 8;
   #numberOfCols = 8;
@@ -168,8 +165,6 @@ class ChessBoard {
         sqr.dataset.chessPiece = null;
         // sqr.textContent  = sqr.dataset.val;
 
-        // WTF JS ? I need to bind "this" to function since it is passed referentially
-        // if not "this" would be lost
         sqr.addEventListener("click", this.#movePiece.bind(chessBoard));
         // draw the alternating sqr colors
         if ((x + y) % 2 == 0) {
@@ -190,7 +185,6 @@ class ChessBoard {
     }
     this.#placePieces();
   }
-  // stupid function not doing its job well
   #cleanChessBoard() {
     this.board._logicBoard().forEach((row) => {
       row.forEach((val) => {
@@ -198,22 +192,9 @@ class ChessBoard {
         sqr.dataset.isOccupied = false;
         sqr.dataset.chessPiece = null;
         sqr.innerHTML = "";
-
-        // if (sqr.classList.contains("active-sqr")) {
-        //   // console.log("before:",sqr.dataset.val, sqr.classList);
         sqr.classList.remove("active-sqr");
-        //   // sqr.classList = ""
-        //   // console.log("after:",sqr.dataset.val, sqr.classList);
-        // }
-        // // if (sqr.classList.contains("opps-sqr")){
         sqr.classList.remove("opps-sqr");
-        // // }
-        // // if (sqr.classList.contains("circle-sqr"))
-        // // {
         sqr.classList.remove("circle-sqr");
-
-        // }
-        // sqr.className = ""
       });
     });
   }
@@ -295,28 +276,52 @@ class ChessBoard {
       ? piece.type.toLowerCase() == "p" && piece.promotable
       : null;
 
-    if(piece && !whoPlayedLast){
-      this.#highlightMoves(piece);
-      let legalMoves = this.#getMoves(piece);
-      console.log(legalMoves)
-      for (let moves of legalMoves) {
-        if (pawnPromotable) {
-          piece.type = promoteTo(piece.type, "q");
-        }
-        if (moves) {
-          for (let move of moves) {
-            let sqr = getSqr(move);
-            sqr.addEventListener("click", () => {
-              this.#updateChessBoard(
-                piece.type,
-                piece.currentVal,
-                sqr.dataset.val
-              );
-            });
-          }
-        }
-      }
+     let isSqrOccupiedByType = (val, curP) => {
+       let nextP = JSON.parse(getSqr(val).dataset.chessPiece);
+       return nextP
+         ? this.#getPieceColor(curP.type) === this.#getPieceColor(nextP.type)
+         : null;
+     };
+
+    // first click
+    if(piece){
+      this.p = piece;
+      // this.#highlightMoves(piece.moves);
+      console.log(piece.moves)
     }
+    // second click
+    if(!piece){
+      // let legalMoves = this.#getMoves(this.p);
+      legalMoves.forEach((item)=>{
+        item && item.includes(+sqr.dataset.val) ? this.#updateChessBoard(
+          this.p.type,
+          this.p.currentVal,
+          sqr.dataset.val
+        ):null
+      })
+    }
+    // if(piece && !whoPlayedLast){
+    //   this.#highlightMoves(piece);
+    //   let legalMoves = this.#getMoves(piece);
+    //   console.log(legalMoves)
+    //   for (let moves of legalMoves) {
+    //     if (pawnPromotable) {
+    //       piece.type = promoteTo(piece.type, "q");
+    //     }
+    //     if (moves) {
+    //       for (let move of moves) {
+    //         let sqr = getSqr(move);
+    //         sqr.addEventListener("click", () => {
+    //           this.#updateChessBoard(
+    //             piece.type,
+    //             piece.currentVal,
+    //             sqr.dataset.val
+    //           );
+    //         });
+    //       }
+    //     }
+    //   }
+    // }
 
   }
   #placePieces() {
@@ -382,78 +387,81 @@ class ChessBoard {
   #getPieceColor(symbol) {
     return symbol == symbol.toLowerCase() ? "black" : "white";
   }
-  #getMoves(chessPiece) {
-    if (!(typeof chessPiece === "object" && chessPiece !== null))
-        throw new TypeError("not an object chess piece");
-    let getSqr = (val) => document.querySelector(`[data-val="${val}"]`);
+  // #getMoves(chessPiece) {
+  //   if (!(typeof chessPiece === "object" && chessPiece !== null))
+  //       throw new TypeError("not an object chess piece");
+  //   let getSqr = (val) => document.querySelector(`[data-val="${val}"]`);
 
-    // returns true if the next piece is occupied by any type -> str
-    let isSqrOccupied = (val) => getSqr(val).dataset.isOccupied;
-    // returns true=same type - false=opposite type
-    // retruns null=empty sqr
-    let isSqrOccupiedByType = (val, curP) => {
-      let nextP = JSON.parse(getSqr(val).dataset.chessPiece);
-      return nextP
-        ? this.#getPieceColor(curP.type) === this.#getPieceColor(nextP.type)
-        : null;
-    };
+  //   // returns true if the next piece is occupied by any type -> str
+  //   let isSqrOccupied = (val) => getSqr(val).dataset.isOccupied;
+  //   // returns true=same type - false=opposite type
+  //   // retruns null=empty sqr
+  //   let isSqrOccupiedByType = (val, curP) => {
+  //     let nextP = JSON.parse(getSqr(val).dataset.chessPiece);
+  //     return nextP
+  //       ? this.#getPieceColor(curP.type) === this.#getPieceColor(nextP.type)
+  //       : null;
+  //   };
   
 
-    const pawn = ["p"].includes(chessPiece.type.toLowerCase());
-    const slideable = ["r", "b", "q"].includes(chessPiece.type.toLowerCase());
-    // not completely legal have not accounted for checkmate
-    let legalMoves = null;
-    if (pawn) {
-      let pawnPseudoMoves = Object.entries(chessPiece.moves).map((move) => {
-        let [moveName, moveVal] = [...move];
-        let canAdvance =
-          moveName == "forward" &&
-          isSqrOccupied(moveVal, chessPiece) == "false";
-        let canCaptureOpps =
-          (moveName == "topRight" || moveName == "topLeft") &&
-          isSqrOccupiedByType(moveVal, chessPiece) == false;
-        // console.log("hasMoved:", chessPiece);
-        if (canAdvance) return moveVal;
-        if (canCaptureOpps) return moveVal;
-      });
-      legalMoves = pawnPseudoMoves;
-    } else if (slideable) {
-      let slideablePseudoMoves = Object.entries(chessPiece.moves).map(
-        (move) => {
-          let [_, moveVal] = [...move];
-          let sqrOccupiedType = moveVal.map((item) =>
-            isSqrOccupiedByType(item, chessPiece)
-          );
-          let sqrOccupied = moveVal.map((item) =>
-            isSqrOccupied(item, chessPiece) == "true" ? true : false
-          );
-          let positions = [],
-            index = 1;
-          while (
-            sqrOccupiedType[index] != true &&
-            index < sqrOccupiedType.length
-          ) {
-            positions.push(moveVal[index]);
-            if (sqrOccupied[index]) break;
-            index++;
-          }
-          return positions;
-        }
-      );
-      legalMoves = slideablePseudoMoves;
-    } else {
-      let regularPseudoMoves = Object.entries(chessPiece.moves).map((move) => {
-        let [_, moveVal] = [...move];
-        return isSqrOccupiedByType(moveVal, chessPiece) ? null : moveVal;
-      });
-      legalMoves = regularPseudoMoves;
-    }
-    return legalMoves;
-  }
+  //   const pawn = ["p"].includes(chessPiece.type.toLowerCase());
+  //   const slideable = ["r", "b", "q"].includes(chessPiece.type.toLowerCase());
+  //   // not completely legal have not accounted for checkmate
+  //   let legalMoves = null;
+  //   if (pawn) {
+  //     let pawnPseudoMoves = Object.entries(chessPiece.moves).map((move) => {
+  //       let [moveName, moveVal] = [...move];
+  //       let canAdvance =
+  //         moveName == "forward" &&
+  //         isSqrOccupied(moveVal, chessPiece) == "false";
+  //       let canCaptureOpps =
+  //         (moveName == "topRight" || moveName == "topLeft") &&
+  //         isSqrOccupiedByType(moveVal, chessPiece) == false;
+  //       // console.log("hasMoved:", chessPiece.hasMoved);
+  //       // if (!chessPiece.hasMoved) return [16];
+  //       console.log(moveVal)
+  //       if (canAdvance) return moveVal;
+  //       if (canCaptureOpps) return moveVal;
+        
+  //     });
+  //     legalMoves = pawnPseudoMoves;
+  //   } else if (slideable) {
+  //     let slideablePseudoMoves = Object.entries(chessPiece.moves).map(
+  //       (move) => {
+  //         let [_, moveVal] = [...move];
+  //         let sqrOccupiedType = moveVal.map((item) =>
+  //           isSqrOccupiedByType(item, chessPiece)
+  //         );
+  //         let sqrOccupied = moveVal.map((item) =>
+  //           isSqrOccupied(item, chessPiece) == "true" ? true : false
+  //         );
+  //         let positions = [],
+  //           index = 1;
+  //         while (
+  //           sqrOccupiedType[index] != true &&
+  //           index < sqrOccupiedType.length
+  //         ) {
+  //           positions.push(moveVal[index]);
+  //           if (sqrOccupied[index]) break;
+  //           index++;
+  //         }
+  //         return positions;
+  //       }
+  //     );
+  //     legalMoves = slideablePseudoMoves;
+  //   } else {
+  //     let regularPseudoMoves = Object.entries(chessPiece.moves).map((move) => {
+  //       let [_, moveVal] = [...move];
+  //       return isSqrOccupiedByType(moveVal, chessPiece) ? null : moveVal;
+  //     });
+  //     legalMoves = regularPseudoMoves;
+  //   }
+  //   return legalMoves;
+  // }
   #highlightMoves(chessPiece) {
     let getSqr = (val) => document.querySelector(`[data-val="${val}"]`);
     getSqr(chessPiece.currentVal).classList.toggle("active-sqr");
-    let validMoves = this.#getMoves(chessPiece);
+    // let validMoves = this.#getMoves(chessPiece);
     validMoves.forEach((listOfMoves) => {
       if (listOfMoves) {
         listOfMoves.forEach((move) => {
