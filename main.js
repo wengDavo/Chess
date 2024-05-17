@@ -1,138 +1,127 @@
 "use strict";
 // TODO
-// feature => set pawns to move twice at the start of the game
 // feature => checkmate and castling
-// bug => knights are not moving perfectly because of the reduce parameter set for them
-//    which is good except when they are at the other edge of the board then some of their moves
-//    will be reduced  because the position is -1
 class ChessPiece {
   constructor(currentVal, type, img) {
-    this.currentVal = currentVal;
-    this.type = type;
     this.img = img;
+    this.type = type;
     this.board = new Board();
+    this.currentVal = currentVal;
   }
   #incrementBy = {
-    north: 8,
-    south: -8,
-    east: -1,
-    west: 1,
-
-    northEast: 7,
-    northWest: 9,
-    southEast: -9,
-    southWest: -7,
+    N: 8,
+    S: -8,
+    E: -1,
+    W: 1,
+    NE: 7,
+    NW: 9,
+    SE: -9,
+    SW: -7,
+    // KNIGHTS NORTH EAST WIDE, NORTH EAST LONG
+    NEW: 6,
+    // NWW => 10
+    NWW: 9,
+    // SEW => -10
+    SEW: -9,
+    // SWW => -6
+    SWW: -5,
+    NEL: 15,
+    NWL: 17,
+    SEL: -17,
+    SWL: -15,
+    // NEW: 6,
+    // NWW: 10,
+    // SEW: -10,
+    // SWW: -6,
+    // NEL: 15,
+    // NWL: 17,
+    // SEL: -17,
+    // SWL: -15,
   };
-  #validateMove(nextval, distanceToEdge) {
-    const board = this.board._logicBoard();
-    if (nextval < board[0][0] || nextval > board.at(-1).at(-1))
-      return false;
-    if (distanceToEdge <= 0) return false;
-    return true;
-  }
-  #calcMove(val, increment, distanceToEdge, slideable) {
-    let nextval = val - increment;
-    let valid = this.#validateMove(nextval, distanceToEdge);
-    if (valid) {
-      if (slideable) {
-        let nextvals = [];
-        for (let i = 0; i <= distanceToEdge; i++) {
-          let sqrval = val - increment * i;
-          nextvals.push(sqrval);
-        }
-        return nextvals;
-      }
-      return [nextval];
-    }
-  }
 
-  // takes the name of the direction it is to calculate, and returns the val in the direction
-  // slideable(Boolean) => for sliding pieces, true if the val should be slided to the edge of the board (Q, B, R)
-  // offsets => Knight pieces takes an offest number and adds it to the val for the direction to get the L movement
-  // reduce => Knight pieces takes a number to reduce how far a val should be to the edge of the board to return null
-  getMove(nameOfDirection, val, slideable, offset = 0, reduce = 0) {
-    let distanceTo = this.board._distanceToEdges(val);
-    return this.#calcMove(
-      val,
-      this.#incrementBy[nameOfDirection] + offset,
-      distanceTo[nameOfDirection] + reduce,
-      slideable
-    );
+  getMove(direction, val, slideable = false, offset = 0) {
+    const board = this.board._logicBoard();
+    const getSqr = (val) => document.querySelector(`[data-val="${val}"]`);
+    let nextval = val - this.#incrementBy[direction];
+    let distanceToEdge = this.board._distanceToEdges(val)[direction];
+
+    if (nextval < board[0][0] || nextval > board.at(-1).at(-1)) return null;
+    if (distanceToEdge <= 0) return null;
+    if (slideable) {
+      let nextvals = [];
+      for (let i = 0; i <= distanceToEdge; i++) {
+        let sqrval = val - this.#incrementBy[direction] * i;
+        nextvals.push(sqrval);
+      }
+      return nextvals;
+    }
+
+    return nextval;
   }
 }
 class Pawn extends ChessPiece {
-  direction = this.type == "P" ? "north" : "south";
-  directionTopRight =
-    this.direction == "north"
-      ? `${this.direction}East`
-      : `${this.direction}West`;
-  directionTopLeft =
-    this.direction == "north"
-      ? `${this.direction}West`
-      : `${this.direction}East`;
-  // a pawn is  promotable if the distance to the forward  is less than or equal 1
+  constructor(currentVal, type, img) {
+    super(currentVal, type, img);
+  }
+  #direction = this.type == "p" ? "S" : "N";
   promotable =
     this.board._distanceToEdges(this.currentVal)[this.direction] <= 1;
   hasMoved = false;
-  moves = {
-    forward: this.getMove(this.direction, this.currentVal),
-    topRight: this.getMove(this.directionTopRight, this.currentVal),
-    topLeft: this.getMove(this.directionTopLeft, this.currentVal),
-  };
+  #movesDirections = [
+    `${this.#direction}`,
+    `${this.#direction}E`,
+    `${this.#direction}W`,
+  ];
+  moves = this.#movesDirections.map((direction) =>
+    this.getMove(direction, this.currentVal)
+  );
 }
+
 class Rook extends ChessPiece {
-  moves = {
-    north: this.getMove("north", this.currentVal, true),
-    south: this.getMove("south", this.currentVal, true),
-    east: this.getMove("east", this.currentVal, true),
-    west: this.getMove("west", this.currentVal, true),
-  };
+  constructor(currentVal, type, img) {
+    super(currentVal, type, img);
+  }
+  #movesDirections = ["N", "S", "E", "W"];
+  moves = this.#movesDirections.map((direction) =>
+    this.getMove(direction, this.currentVal, true)
+  );
 }
 class Bishop extends ChessPiece {
-  moves = {
-    northEast: this.getMove("northEast", this.currentVal, true),
-    northWest: this.getMove("northWest", this.currentVal, true),
-    southEast: this.getMove("southEast", this.currentVal, true),
-    southWest: this.getMove("southWest", this.currentVal, true),
-  };
+  constructor(currentVal, type, img) {
+    super(currentVal, type, img);
+  }
+  #movesDirections = ["NE", "NW", "SE", "SW"];
+  moves = this.#movesDirections.map((direction) =>
+    this.getMove(direction, this.currentVal, true)
+  );
 }
 class Knight extends ChessPiece {
-  moves = {
-    // problem
-    northEastWide: this.getMove("northEast", this.currentVal, false, -1, -1),
-    northWestWide: this.getMove("northWest", this.currentVal, false, +1, -1), // -1*
-    southEastWide: this.getMove("southEast", this.currentVal, false, -1, -1), // -1*
-    southWestWide: this.getMove("southWest", this.currentVal, false, +1, -1),
+  constructor(currentVal, type, img) {
+    super(currentVal, type, img);
+  }
 
-    northEastLong: this.getMove("northEast", this.currentVal, false, +8),
-    northWestLong: this.getMove("northWest", this.currentVal, false, +8),
-    southEastLong: this.getMove("southEast", this.currentVal, false, -8),
-    southWestLong: this.getMove("southWest", this.currentVal, false, -8),
-  };
+  #movesDirections = ["NEW", "NWW", "SEW", "SWW", "NEL", "NWL", "SEL", "SWL"];
+  moves = this.#movesDirections.map((direction) =>
+    this.getMove(direction, this.currentVal)
+  );
 }
 class King extends ChessPiece {
-  moves = {
-    north: this.getMove("north", this.currentVal),
-    south: this.getMove("south", this.currentVal),
-    east: this.getMove("east", this.currentVal),
-    west: this.getMove("west", this.currentVal),
-    northEast: this.getMove("northEast", this.currentVal),
-    northWest: this.getMove("northWest", this.currentVal),
-    southEast: this.getMove("southEast", this.currentVal),
-    southWest: this.getMove("southWest", this.currentVal),
-  };
+  constructor(currentVal, type, img) {
+    super(currentVal, type, img);
+  }
+  #movesDirections = ["N", "S", "E", "W", "NE", "NW", "SE", "SW"];
+  moves = this.#movesDirections.map((direction) =>
+    this.getMove(direction, this.currentVal)
+  );
 }
 class Queen extends ChessPiece {
-  moves = {
-    north: this.getMove("north", this.currentVal, true),
-    south: this.getMove("south", this.currentVal, true),
-    east: this.getMove("east", this.currentVal, true),
-    west: this.getMove("west", this.currentVal, true),
-    northEast: this.getMove("northEast", this.currentVal, true),
-    northWest: this.getMove("northWest", this.currentVal, true),
-    southEast: this.getMove("southEast", this.currentVal, true),
-    southWest: this.getMove("southWest", this.currentVal, true),
-  };
+  constructor(currentVal, type, img) {
+    super(currentVal, type, img);
+  }
+  #movesDirections = ["N", "S", "E", "W", "NE", "NW", "SE", "SW"];
+  moves = this.#movesDirections.map((direction) =>
+    this.getMove(direction, this.currentVal, true)
+  );
 }
 
 class ChessBoard {
@@ -140,15 +129,11 @@ class ChessBoard {
     this.board = new Board();
     this.chessBoard = document.querySelector(".chess-board");
     this.displayPanel = document.querySelector(".display");
-    this.p = null;
   }
   #numberOfRows = 8;
   #numberOfCols = 8;
   #whoPlayedLast = "";
   #fenString = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-  get fenString() {
-    return this.#fenString;
-  }
   drawChessBoard() {
     for (let x = 0; x < this.#numberOfRows; x++) {
       let row = document.createElement("article");
@@ -163,7 +148,7 @@ class ChessBoard {
         sqr.dataset.val = this.board._logicBoard()[x][y];
         sqr.dataset.isOccupied = false;
         sqr.dataset.chessPiece = null;
-        // sqr.textContent  = sqr.dataset.val;
+        sqr.innerHTML = sqr.dataset.val;
 
         sqr.addEventListener("click", this.#movePiece.bind(chessBoard));
         // draw the alternating sqr colors
@@ -265,64 +250,17 @@ class ChessBoard {
   #movePiece(e) {
     const sqr = e.target.closest("div");
     const piece = JSON.parse(sqr.dataset.chessPiece);
-   
+
     const getSqr = (val) => document.querySelector(`[data-val="${val}"]`);
-    const promoteTo = (symbol, piece) =>
-      symbol == symbol.toLowerCase() ? piece : piece.toUpperCase();
-    const whoPlayedLast = piece
-      ? this.#getPieceColor(piece.type) == this.#whoPlayedLast
-      : null;
-    const pawnPromotable = piece
-      ? piece.type.toLowerCase() == "p" && piece.promotable
-      : null;
 
-     let isSqrOccupiedByType = (val, curP) => {
-       let nextP = JSON.parse(getSqr(val).dataset.chessPiece);
-       return nextP
-         ? this.#getPieceColor(curP.type) === this.#getPieceColor(nextP.type)
-         : null;
-     };
-
-    // first click
-    if(piece){
+    if (piece) {
+      let validMoves = this.#getValidMoves(piece);
       this.p = piece;
-      // this.#highlightMoves(piece.moves);
-      console.log(piece.moves)
-    }
-    // second click
-    if(!piece){
-      // let legalMoves = this.#getMoves(this.p);
-      legalMoves.forEach((item)=>{
-        item && item.includes(+sqr.dataset.val) ? this.#updateChessBoard(
-          this.p.type,
-          this.p.currentVal,
-          sqr.dataset.val
-        ):null
-      })
-    }
-    // if(piece && !whoPlayedLast){
-    //   this.#highlightMoves(piece);
-    //   let legalMoves = this.#getMoves(piece);
-    //   console.log(legalMoves)
-    //   for (let moves of legalMoves) {
-    //     if (pawnPromotable) {
-    //       piece.type = promoteTo(piece.type, "q");
-    //     }
-    //     if (moves) {
-    //       for (let move of moves) {
-    //         let sqr = getSqr(move);
-    //         sqr.addEventListener("click", () => {
-    //           this.#updateChessBoard(
-    //             piece.type,
-    //             piece.currentVal,
-    //             sqr.dataset.val
-    //           );
-    //         });
-    //       }
-    //     }
-    //   }
-    // }
 
+      this.#highlightMoves(piece.currentVal, validMoves);
+   
+
+    }
   }
   #placePieces() {
     let pieceTypeFromSymbol = (currentVal, symbol) => {
@@ -387,91 +325,83 @@ class ChessBoard {
   #getPieceColor(symbol) {
     return symbol == symbol.toLowerCase() ? "black" : "white";
   }
-  // #getMoves(chessPiece) {
-  //   if (!(typeof chessPiece === "object" && chessPiece !== null))
-  //       throw new TypeError("not an object chess piece");
-  //   let getSqr = (val) => document.querySelector(`[data-val="${val}"]`);
-
-  //   // returns true if the next piece is occupied by any type -> str
-  //   let isSqrOccupied = (val) => getSqr(val).dataset.isOccupied;
-  //   // returns true=same type - false=opposite type
-  //   // retruns null=empty sqr
-  //   let isSqrOccupiedByType = (val, curP) => {
-  //     let nextP = JSON.parse(getSqr(val).dataset.chessPiece);
-  //     return nextP
-  //       ? this.#getPieceColor(curP.type) === this.#getPieceColor(nextP.type)
-  //       : null;
-  //   };
-  
-
-  //   const pawn = ["p"].includes(chessPiece.type.toLowerCase());
-  //   const slideable = ["r", "b", "q"].includes(chessPiece.type.toLowerCase());
-  //   // not completely legal have not accounted for checkmate
-  //   let legalMoves = null;
-  //   if (pawn) {
-  //     let pawnPseudoMoves = Object.entries(chessPiece.moves).map((move) => {
-  //       let [moveName, moveVal] = [...move];
-  //       let canAdvance =
-  //         moveName == "forward" &&
-  //         isSqrOccupied(moveVal, chessPiece) == "false";
-  //       let canCaptureOpps =
-  //         (moveName == "topRight" || moveName == "topLeft") &&
-  //         isSqrOccupiedByType(moveVal, chessPiece) == false;
-  //       // console.log("hasMoved:", chessPiece.hasMoved);
-  //       // if (!chessPiece.hasMoved) return [16];
-  //       console.log(moveVal)
-  //       if (canAdvance) return moveVal;
-  //       if (canCaptureOpps) return moveVal;
-        
-  //     });
-  //     legalMoves = pawnPseudoMoves;
-  //   } else if (slideable) {
-  //     let slideablePseudoMoves = Object.entries(chessPiece.moves).map(
-  //       (move) => {
-  //         let [_, moveVal] = [...move];
-  //         let sqrOccupiedType = moveVal.map((item) =>
-  //           isSqrOccupiedByType(item, chessPiece)
-  //         );
-  //         let sqrOccupied = moveVal.map((item) =>
-  //           isSqrOccupied(item, chessPiece) == "true" ? true : false
-  //         );
-  //         let positions = [],
-  //           index = 1;
-  //         while (
-  //           sqrOccupiedType[index] != true &&
-  //           index < sqrOccupiedType.length
-  //         ) {
-  //           positions.push(moveVal[index]);
-  //           if (sqrOccupied[index]) break;
-  //           index++;
-  //         }
-  //         return positions;
-  //       }
-  //     );
-  //     legalMoves = slideablePseudoMoves;
-  //   } else {
-  //     let regularPseudoMoves = Object.entries(chessPiece.moves).map((move) => {
-  //       let [_, moveVal] = [...move];
-  //       return isSqrOccupiedByType(moveVal, chessPiece) ? null : moveVal;
-  //     });
-  //     legalMoves = regularPseudoMoves;
-  //   }
-  //   return legalMoves;
-  // }
-  #highlightMoves(chessPiece) {
+  #getValidMoves(piece) {
     let getSqr = (val) => document.querySelector(`[data-val="${val}"]`);
-    getSqr(chessPiece.currentVal).classList.toggle("active-sqr");
-    // let validMoves = this.#getMoves(chessPiece);
-    validMoves.forEach((listOfMoves) => {
-      if (listOfMoves) {
-        listOfMoves.forEach((move) => {
-          let nxtSqr = getSqr(move);
-          let nxtSqrPiece = JSON.parse(getSqr(move).dataset.chessPiece);
-          nxtSqrPiece
-            ? nxtSqr.classList.toggle("opps-sqr")
-            : nxtSqr.classList.toggle("circle-sqr");
-        });
+
+    // true if occuppied
+    // false if not
+    let sqrIsOccupied = (val) => getSqr(val).dataset.isOccupied;
+
+    // true if occuppied
+    // false if occuppied by opp
+    // null if not occupied
+    let sqrIsOccupiedByType = (val, curP) => {
+      if (val) {
+        let nextP = JSON.parse(getSqr(val).dataset.chessPiece);
+        return nextP
+          ? this.#getPieceColor(curP.type) === this.#getPieceColor(nextP.type)
+          : null;
       }
+    };
+
+    let validMoves = [];
+    let moves = piece.moves;
+    const pawn = ["p"].includes(piece.type.toLowerCase());
+    const slideable = ["r", "b", "q"].includes(piece.type.toLowerCase());
+    const normal = ["k", "n"].includes(piece.type.toLowerCase());
+    if (pawn) {
+      let double = (val, type) => (type == "p" ? val + 8 : val - 8);
+      if (!piece.hasMoved) {
+        validMoves.push(moves[0], double(moves[0], piece.type));
+      }
+      else{
+      if (sqrIsOccupied(moves[0]) == "false") {
+        validMoves.push([moves[0]]);
+      }
+      if (sqrIsOccupiedByType(moves[1], piece) == false) {
+        validMoves.push([moves[1]]);
+      }
+      if (sqrIsOccupiedByType(moves[2], piece) == false) {
+        validMoves.push([moves[2]]);
+      }
+      }
+    }
+    if (slideable) {
+      for (let x = 0; x < moves.length; x++) {
+        validMoves.push([]);
+        if (moves[x]) {
+          for (let y = 1; y < moves[x].length; y++) {
+            if (sqrIsOccupiedByType(moves[x][y], piece)) {
+              break;
+            }
+            if (sqrIsOccupiedByType(moves[x][y], piece) == false) {
+              validMoves[x].push(moves[x][y]);
+              break;
+            }
+            validMoves[x].push(moves[x][y]);
+          }
+        }
+      }
+    }
+    if (normal) {
+      validMoves = moves.map((val) => {
+        if (val) return sqrIsOccupiedByType(val, piece) ? [] : [val];
+        return [];
+      });
+    }
+    return validMoves;
+  }
+  #highlightMoves(currentVal, nextVals) {
+    let flatenedVals = nextVals.flat(Infinity);
+    let getSqr = (val) => document.querySelector(`[data-val="${val}"]`);
+    getSqr(currentVal).classList.toggle("active-sqr");
+
+    flatenedVals.forEach((val) => {
+      let nxtSqr = getSqr(val);
+      let nxtSqrPiece = JSON.parse(getSqr(val).dataset.chessPiece);
+      nxtSqrPiece
+        ? nxtSqr.classList.toggle("opps-sqr")
+        : nxtSqr.classList.toggle("circle-sqr");
     });
   }
 }
@@ -503,15 +433,15 @@ class Board {
         if (item == val) {
           let [north, south, east, west] = [x, 7 - x, 7 - y, y];
           // let center = Math.min(north, west, east, south)
-          distances["north"] = north;
-          distances["south"] = south;
-          distances["east"] = east;
-          distances["west"] = west;
+          distances["N"] = north;
+          distances["S"] = south;
+          distances["E"] = east;
+          distances["W"] = west;
 
-          distances["northWest"] = Math.min(north, west);
-          distances["northEast"] = Math.min(north, east);
-          distances["southWest"] = Math.min(south, west);
-          distances["southEast"] = Math.min(south, east);
+          distances["NW"] = Math.min(north, west);
+          distances["NE"] = Math.min(north, east);
+          distances["SW"] = Math.min(south, west);
+          distances["SE"] = Math.min(south, east);
         }
       });
     });
