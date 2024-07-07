@@ -129,6 +129,7 @@ class ChessBoard {
     this.board = new Board();
     this.chessBoard = document.querySelector(".chess-board");
     this.displayPanel = document.querySelector(".display");
+    this.moves = [];
   }
   #numberOfRows = 8;
   #numberOfCols = 8;
@@ -148,9 +149,10 @@ class ChessBoard {
         sqr.dataset.val = this.board._logicBoard()[x][y];
         sqr.dataset.isOccupied = false;
         sqr.dataset.chessPiece = null;
-        sqr.innerHTML = sqr.dataset.val;
 
         sqr.addEventListener("click", this.#movePiece.bind(chessBoard));
+        sqr.addEventListener("dragover", (e) => e.preventDefault());
+
         // draw the alternating sqr colors
         if ((x + y) % 2 == 0) {
           sqr.classList.add("white-sqr");
@@ -255,11 +257,27 @@ class ChessBoard {
 
     if (piece) {
       let validMoves = this.#getValidMoves(piece);
-      this.p = piece;
-
       this.#highlightMoves(piece.currentVal, validMoves);
-   
 
+      validMoves.forEach((move) => {
+       if(move){
+        console.log("move:", move)
+         const sqr = getSqr(move);
+         sqr.addEventListener("drop", (e) => {
+           e.preventDefault();
+           const data = e.dataTransfer.getData("text");
+           e.target.insertAdjacentHTML(
+             "afterbegin",
+             `<img src=${data} class="chess-piece-icon" />`
+           );
+           this.#updateChessBoard(
+             piece.type,
+             piece.currentVal,
+             sqr.dataset.val
+           );
+         });
+       }
+      });
     }
   }
   #placePieces() {
@@ -315,6 +333,10 @@ class ChessBoard {
           // add icons to the boards
           let icon = document.createElement("img");
           icon.setAttribute("src", chessPiece["img"]);
+          icon.setAttribute("draggable", true);
+          icon.addEventListener("dragstart", (e) =>
+            e.dataTransfer.setData("text", e.target.id)
+          );
           icon.classList.add("chess-piece-icon");
           sqr.append(icon);
           y++;
@@ -353,17 +375,16 @@ class ChessBoard {
       let double = (val, type) => (type == "p" ? val + 8 : val - 8);
       if (!piece.hasMoved) {
         validMoves.push(moves[0], double(moves[0], piece.type));
-      }
-      else{
-      if (sqrIsOccupied(moves[0]) == "false") {
-        validMoves.push([moves[0]]);
-      }
-      if (sqrIsOccupiedByType(moves[1], piece) == false) {
-        validMoves.push([moves[1]]);
-      }
-      if (sqrIsOccupiedByType(moves[2], piece) == false) {
-        validMoves.push([moves[2]]);
-      }
+      } else {
+        if (sqrIsOccupied(moves[0]) == "false") {
+          validMoves.push([moves[0]]);
+        }
+        if (sqrIsOccupiedByType(moves[1], piece) == false) {
+          validMoves.push([moves[1]]);
+        }
+        if (sqrIsOccupiedByType(moves[2], piece) == false) {
+          validMoves.push([moves[2]]);
+        }
       }
     }
     if (slideable) {
