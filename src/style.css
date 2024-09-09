@@ -34,7 +34,8 @@ body {
   flex-direction: column;
   row-gap: 1rem;
 
-  font-family: cursive;
+  font-family: "Comic Sans MS", "Chalkboard SE", "Marker Felt", cursive;
+
 }
 .display{
   height: 5%;
@@ -55,7 +56,7 @@ body {
 }
 @media screen and (min-width: 600px) {
   .game{
-    height: 60%;
+    height: 70%;
   }
 }
 
