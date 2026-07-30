@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "start": "vite preview --port $PORT --host 0.0.0.0"
   },
   "keywords": [],
   "author": "",
